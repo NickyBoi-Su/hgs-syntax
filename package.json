@@ -1,0 +1,61 @@
+{
+  "name": "hgs-syntax",
+  "displayName": "HydroGeoSphere Syntax",
+  "description": "Syntax highlighting for HydroGeoSphere GROK and property files.",
+  "version": "0.0.1",
+  "publisher": "hydroclaus",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "activationEvents": [],
+  "contributes": {
+    "languages": [
+      {
+        "id": "hgs",
+        "aliases": [
+          "HydroGeoSphere",
+          "HGS",
+          "GROK"
+        ],
+        "extensions": [".grok"],
+        "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "hgs-properties",
+        "aliases": [
+          "HydroGeoSphere Properties",
+          "HGS Properties"
+        ],
+        "extensions": [
+          ".mprops",
+          ".etprops",
+          ".fprops",
+          ".dprops",
+          ".oprops"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "hgs",
+        "scopeName": "source.grok",
+        "path": "./syntaxes/hgs.tmLanguage.json"
+      },
+      {
+        "language": "hgs-properties",
+        "scopeName": "source.hgs-properties",
+        "path": "./syntaxes/hgs-properties.tmLanguage.json"
+      }
+    ]
+  },
+  "scripts": {
+    "extract": "python scripts/extract-hgs-commands.py",
+    "generate": "node scripts/generate-grammar.js",
+    "test": "node test/validate-extension.js"
+  }
+}

@@ -1,0 +1,594 @@
+!!--------------------------  Problem description
+!   ALL grok files will begin with a 'Problem description'
+!   This is simply an area for you to take notes about the model. 
+!   Until the 'end title' command is encountered it is NOT necessary to 'comment out' lines using the '!' character
+!   I have used the '!' here for the sake of clarity/consistency. 
+Notes about the model: 
+This is the R5 model associated with the comprehensive 'Intro to HGS' tutorial. 
+This model covers a small (~0.1km^2) rangeland catchment near Oklahoma City.
+
+The 2D model mesh is imported from AlgoMesh.
+Layer elevations are defined using GIS raster (.asc) files, with 5 major units and a total of 10 model layers. 
+A small clay lens is included in the 3rd unit (layer 5). 
+
+The porous medium domain contains 3 zones ('Medium sand', 'Coarse sand' and 'Clay'; each with homogeneous properties).
+    Delineation of material zones is mostly achieved using a GIS raster (.asc) file. 
+    Delineation of the clay lense is achieved using a chosen elements (*.echos) file from AlgoMesh.
+
+The surface domain contains 2 zones ('Grassland' and 'Ranch road')
+    Delineation of the surface domain zones ia also achieved using chosen elements (*.echos) files from AlgoMesh.
+
+The model is driven by 4 major boundary conditions: 
+    1) Critical depth BCs applied to the boundary of the model in the surface domain.
+    2) Rain BC is applied homogeneously to the entire surface domain. 
+    3) Evapotranspiration is applied homogeneously to the surface/porous medium domains. 
+    4) A series of pumping wells draw water from the porous medium domain. 
+
+***     This problem and *.grok file can be used as the starting point for your own models if using AlgoMesh to design your 2D model mesh.
+        Just copy the project files into a new project folder and change the data sources! 
+end title   !   The 'end title' command is the first true command in ALL grok files. 
+            !   After 'end title' grok.exe immediately begins the grid generation section. 
+            !   The grid generation section continues until the 'end grid generation' command is encountered. 
+
+!!--------------------------  Grid generation
+!   We recommend creating a high-quality triangular mesh in AlgoMesh and importing it using the 'read algomesh 2d grid' command.
+!   This is demonstrated in this tutorial. 
+!   However, it is also possible to generate your mesh entirely within the grok file using native HGS commands. 
+!   Grid generated directly in the grok file tend to be simpler, with uniform blocks/elements, or variably sized blocks based on simple commands. 
+!   See section 2.3 of the Reference Manual for more info about native grid generation commands. 
+
+read algomesh 2d grid   !   This command causes grok to read in a 2D triangular mesh from AlgoMesh
+./mesh/R5_mesh.ah2      !   This is the file name/location of the 2D grid. Take special note of the syntax here! 
+                        !   IF the file in question is located directly in the project folder you can simply enter the filename as required by individual commands. 
+                        !   If the file is located within a sub-directory of the project folder you can point to the location of the file relative to the project folder using './'
+                        !   If the file is located elsewhere on your computer you can simply specify the FULL file path/name. 
+
+generate layers interactive !   This command causes grok.exe to begin reading a group of 3D grid generation instructions, allowing you to define the vertical aspects of the grid. 
+                            !   See section 2.3.5.2 of the Reference Manual for a full selection of instructions applicable to the 'generate layers interactive' code block.
+                            !   Note: with respect to layer definition, it is ALWAYS assumed that you begin from the bottom and work your way up vertically!  
+
+!zone by layer  !   This is a helpful command (not used in this tutorial) which automatically assigns successive property zone numbers to the PM domain based on layer numbers. 
+
+    base elevation                  !   Allows you to assign a new base elevation to the model (by default the model base is assumed to be at Z=0)
+        elevation from raster  !   The command "Elevation from raster" allows you to assign an elevation to each node in the surface mesh by interpolating them from a raster file.
+        ./Elevations/base.asc       !   Defines a variable base elevation for the model, which we can assume aligns with the underlying bedrock. 
+    end                             !   a simple 'end' is typically used to end code blocks such as the 'base elevation' block, but also boundary conditions, time-value tables, etc.
+
+        minimum layer thickness with fixed top elevation    !   This command ensures that any pinchouts between elevations (as defined by raster files) are resolved.
+        0.1                                                 !   If a pinchout (i.e. intersection of two node-sheets) is encountered the lower sheet will be pushed down by 0.1m to ensure continuous model layers.
+
+    new layer                       !   'New layer' enters a new code block allowing you to use any command listed in section 2.3.5.3 of the Reference Manual
+        layer name
+        Unit 5      !   See Figure 13 in the Intro to HGS tutorial for context. 
+
+        uniform sublayering         !   'sublayering' commands split the currently defined layer into a series of sublayer (of uniform thickness in this case)
+        2                           !   Note: while the notation 'sublayering' is used here, in fact each 'sublayer' is a full-fledged layer in the eyes of the grok/HGS.
+
+        elevation from raster      !   Here we again are defining the layer elevation based on a GIS raster file. 
+        ./Elevations/roof5_bottompinchout.asc 
+    end
+                        !   You may note that only one elevation must be defined for each new unit/layer.
+                        !   This is because grok assumes that you are defining layer elevations sequentially, from the bottom of the model up to the top layer. 
+                        !   Even if no 'base' elevation is defined, it is assumed to be at Z=0. 
+                        !   Therefore, to define each 3D layer it is only necessary to define the elevation of the TOP node-sheet. 
+    new layer
+        layer name
+        Unit 4      !   See Figure 13 in the Intro to HGS tutorial for context. 
+
+        uniform sublayering
+        2
+
+        elevation from raster
+        ./Elevations/roof4_bottomclay.asc
+    end
+
+    new layer
+        layer name
+        Unit 3      !   See Figure 13 in the Intro to HGS tutorial for context. 
+
+        elevation from raster
+        ./Elevations/roof3_topclay.asc
+    end
+
+    new layer
+        layer name
+        Unit 2      !   See Figure 13 in the Intro to HGS tutorial for context. 
+
+        uniform sublayering
+        2
+
+        elevation from raster
+        ./Elevations/roof1_r5_elevation.asc
+
+        offset top  !   The 'offset top' command causes the defined elevations to be offset vertically.
+        -1          !   This allows you to create a surface at a given distance below another surface. 
+                    !   In this case we are using the same raster as the ground surface, but offset by -1m (i.e. 1m lower). 
+    end
+
+    new layer
+        layer name
+        Unit 1
+
+        Proportional sublayering        !   Proportional sublayering splits the current unit into a # of sublayers with relative thickness
+        3                               !   Here we are specifying 3 proportional sublayers, with the top layer being the thinnest!
+        1                               !   The remaining variables are relative thicknesses. The 1st sublayer is our 'baseline' relative thickness. 
+        1                               !   The 2nd sublayer will be 1x the thickness of the first sublayer. 
+        2                               !   The 3rd sublayer will be 2x the thickness of the first sublayer.
+
+        elevation from raster
+        ./Elevations/roof1_r5_elevation.asc
+    end
+
+end                     !   Here we end the generate layers interactive code block
+
+end grid generation     !   And finally we end grid generation entirely. We now have a grid too which we can begin assigning properties, boundaries and initial conditions!
+
+mesh to tecplot         !   Causes grok.exe to write a Tecplot formatted grid file (allowing you to visualize the grid without running a full simulation).
+R5mesh.dat
+
+        !       Note: all subsequent sections of the grok file can be written in whatever order you like. There are only two strict rules about the structure of a grok file: 
+        !           1) The grok file MUST begin with a problem description that is finished with the 'end title' command. 
+        !           2) The problem description section MUST be followed by grid generation/definition/import. 
+
+!!--------------------------  Simulation Control Options
+!   This section of the grok file is used to specify general aspects of the simulation. 
+!   By default grok.exe will generate a set of data for a default problem. 
+!   This default problem is assumed to be saturated, steady-state flow, solved using the control volume finite element method. 
+!   This section of the grok file can be used to change these default simulation parameters/control options. 
+
+units: kilogram-metre-second    !   Assigns model units
+unsaturated                     !   Enables variably saturated flow (default is saturated)
+transient flow                  !   Enables a transient/time-varying solution (default is steady-state)
+dual nodes for surface flow     !   Enables the dual node formulation for the specified domain (default is common node)
+finite difference mode          !   Enables the finite difference solution method (default is finite element method)
+integrated finite difference for overland flow  !   Causes HGS to use an incenter approach for computing conductance values in the control volume finite element method (improves numerical stability)
+remove negative coefficients    !   Forces negative inter-nodal conductances to zero (improves numerical stability)
+no nodal flow check             !   Turns off the nodal flow check, which is on by default and only required for transport models 
+
+!!--------------------------  Porous media properties
+!   When assigning material properties always follow these steps: 
+!   1) Ensure you activate the desired domain ('use domain type')
+!   2) Read the property file for the active domain ('properties file')
+!       Note: the property file should list all 'materials' and associated properties for selected domain
+!   3) Clear/select the desired mesh components (e.g. elements for PM domain, faces for OLF domain, etc.)
+!   4) Assign the selected elements/faces/etc. to a 'zone'
+!   5) Clear current zone
+!   6) Select desired zone
+!   7) Assign desired material properties ('read properties')
+!   8) Repeat steps 3-7 until all property zones have been defined
+
+use domain type     !   Step 1), ensure that you have selected the desired domain. 
+porous media
+
+properties file     !   Step 2), read the property file for the active domain
+R5.mprops           !   In this case the R5.mprops file contains three different materials: 'Medium sand', 'Coarse sand' and 'Clay'
+                    !   See the R5.mprops file for further instructions on constructing property files. 
+
+clear chosen elements                       !   Step 3) Always clear your chosen selection to ensure you are not accidentally overwriting any previous assignments! 
+choose elements all                         !       Initially we will choose ALL zones and read zone numbers from a GIS raster file
+Read zones from raster                      !   Step 4) Here we indicate that zone values are associated with a raster file
+./mesh/PM_zones.asc                         !       For each selected element in the PM domain, the zone number is assigned from the raster cell that contains the centroid of that element. 
+
+clear chosen zones          !   Step 5) Always clear your chosen selection!
+choose zone number          !   Step 6) Select the desired zone
+1
+read properties             !   Step 7) Now that our zones are defined, we can begin reading material properties. 
+Medium Sand                 !       All elements which are assigned to zone 1 will have the properties associated with the 'Medium Sand' material. 
+                            !   Step 8) Repeat steps 3-7 for remaining zones!
+clear chosen zones          !   Step 5)   
+choose zone number          !   Step 6)
+2
+read properties             !   Step 7) Assign properties
+Coarse Sand                 !   Step 7) All elements which are assigned to zone 2 will have the properties associated with the 'Coarse Sand' material. 
+                            !   Step 8) Repeat steps 3-7 for remaining zones!
+clear chosen elements       !   Step 3) Clearing selection   
+choose elements am          !   Step 3) Here we are using a chosen elements file (*.echos) generated by AlgoMesh to help delineat the clay lens
+./mesh/Clay_lens.echos      !       Clay_lens.echos identifies the elements that fall within the clay lens.
+5, 6                      !       'choose elements am' also requires us to identify the vertical extent of this selection. In this case we are choosing layers delineated by node-sheets 5-6 (i.e. unit 3, layer #5)
+new zone                    !   Step 4) The clay zone is assigned to zone 3
+3
+
+clear chosen zones          !   Step 5) Always clear your chosen selection!
+choose zone number          !   Step 6) Select the desired zone
+3
+read properties             !   Step 7) And finally we read the 'Clay' material for zone 3. 
+Clay                        !       This completes the assignment of porous medium zones and properties! 
+
+!!--------------------------  Overland flow properties
+!   The same process is used to assign materials and material properties in the overland flow (OLF)/surface domain (and all other possible domains)
+!   The only difference is that domains tend to have different dimensions. The PM domain is 3-dimensional, and therefore the material properties are assigned to 3D elements. 
+!   The OLF domain is 2-dimensional, and therefore material properties are assigned to 2D faces (the same applies for the 2D fracture domain).
+!   Similarly, any 1-dimensional model domain (e.g. wells, channels, tile drains) will have material properties assigned to 1D segments. 
+
+use domain type         !   Step 1) Ensure that you have selected the desired domain. 
+surface
+
+properties file         !   Step 2) Read the property file for the active domain
+R5.oprops               !       In this case the R5.oprops file contains two different materials: 'Grassland' and 'Ranch road'
+                        !       See the R5.oprops file for further instructions on constructing property files. 
+
+clear chosen faces      !   Step 3) Always clear your chosen selection! 
+choose faces top        !   Step 4) First we will assign 'Grassland' properties over the entire surface domain. 
+                        !       'Choose faces top' simply selects ALL faces at the top of the model. 
+new zone                !   Step 4) The entire OLF domain is initially assigned to zone 1
+1
+
+clear chosen zones      !   Step 5) Always clear your chosen selection!
+choose zone number      !   Step 6) Select  the desired zone
+1
+read properties         !   Step 7) And finally we read the 'Grassland' material for zone 1. 
+Grassland
+
+!   Step 8) Repeat for remaining property zones. In this example we will overwrite properties for selected faces, based on an AlgoMesh chosen elements (*.echos) file. 
+clear chosen faces      !   Step 3)
+choose faces top am     !   Step 4)
+./mesh/Ranch_road.echos
+new zone                !   Step 4)
+2
+
+clear chosen zones      !   Step 5)
+choose zone number      !   Step 6)
+2
+read properties         !   Step 7)
+ranch road
+
+!!--------------------------  Initial Conditions
+!   Initial conditions must be assigned for ALL nodes in both surface and subsurface domain and represent the starting point in achieving a solution. 
+!   A variety of options are available, including assigining initial heads based on ground surface elevation and based on a constant value (both demonstrated below). 
+!   It is also possible to assign initial head values based on the final results of a previous model run.
+!       (e.g. see the 'initial head from output file' command in Reference Manual section 2.6)
+!   *** As with material properties, make sure the correct domain is active ('use domain type') when assigning initial conditions! ***
+
+use domain type
+porous media
+
+choose nodes all
+initial head depth to water table  !   All selected nodes in the active domain are assigned an initial head value equal to the surface elevation at this location minus the given depth to water table (1m). 
+1
+
+use domain type
+surface
+
+clear chosen nodes
+choose nodes all
+initial water depth             !   All selected nodes in the surface flow domain are assigned an initial depth value specified by user (0.0001m in this case)
+1.0e-4                          !   If you want no water the surface flow domain initially, it is better to use a small value (i.e., 1e-4) than 0 as it will behave better numerically
+
+!!--------------------------  Boundary Conditions
+!   When assigning boundary conditions you 
+!   1) Ensure you activate the desired domain ('use domain type')
+!   2) Create a 'set' as required by the specific boundary condition (i.e. node set, face set, or segment set)
+!       A 'set' is simply a selection of mesh components grok retains in memory. Each BC uses different types of sets (documented in the Reference Manual, section 2.7)
+!   3) Use the 'boundary condition' command to enter the BC code block
+!   4) Specify the type of BC using the 'type' command
+!   5) Assign the BC to a previously created 'set'
+!   6) Specify values associated with the BC using a time-value/time-file/time-raster table
+!       Note: it is not always mandatory to specify the magnitude of a BC. 
+!       For example, fluxes generated by the 'Critical Depth' BC are based on the surface water depth at the affected segments. 
+!       Another example is the 'fluid transfer' BC, whose magnitude is determined by a different/linked BC. 
+!   7) Activate optional BC constraints/options
+!       Note: this step is also not always mandatory, but can be used to generate additional output or contrain the BC in some way. 
+!       For example, the 'Nodal flux reduction by pressure head' constraint will reduce flows from the 'flux nodal' BC based on pressure head thresholds. 
+!       Another common example is the optional 'tecplot output' command which generates a Tecplot formatted output file for the specific BC. 
+!   8) 'End' the BC code block, and move on to other BCs
+
+!--------------------------  Overland Flow BCs
+!   The surface/overland flow domain will be impacted by three BCs: 
+!       1) A critical depth BC at the model 'outlet' (i.e. the downstream area where we expect the majority of surface water to flow out of the model)
+!       2) Another critical depth BC around the rest of the model (i.e. anywhere not defined by the 'outlet')
+!       3) A 'rain' BC over the entire model domain at a rate of 2cm/hr for 6 hours. 
+
+
+use domain type     !   Step 1) Activate the correct domain
+surface
+
+clear chosen nodes                      !   Step 2) create a set, in this case a segment set
+choose nodes top am                     !   Step 2) continued
+./mesh/Downstream_boundary_nodes.nchos  !   Step 2) continued
+create segment set                      !   Step 2) continued
+outlet                                  !   Step 2) continued
+
+boundary condition      !   Step 3) Enter the BC code block
+    type                !   Step 4) Specify the BC type (in this case 'critical depth')
+    critical depth      
+    
+    name                !   Note: specifying a name for the BC is not required, but can be helpful.
+    CritDepth_outlet    !       If you do not specify a name yourself grok will automatically assign a unique name based on the type and sequential numbering (e.g. 'CritDepth_1')
+    
+    segment set         !   Step 5) Assign the BC to a defined set
+    outlet
+                        !   *** Step 6) is not required for the 'Critical Depth' BC! ***
+    tecplot output      !   Step 7) Here we use the optional 'tecplot output' command to automatically generate a Tecplot formatted output file
+end                     !   Step 8) 'End' the BC code block, which finalizes the assignment of this individual BC
+
+clear chosen nodes
+choose nodes top am
+./mesh/Boundary_nodes.nchos
+create segment set
+non_outlet
+
+boundary condition
+    type
+    critical depth
+    
+    name
+    CritDepth_rest
+    
+    segment set
+    non_outlet
+
+    tecplot output
+end 
+
+clear chosen nodes
+choose nodes top
+create face set
+top
+
+boundary condition
+    type
+    rain
+
+    name
+    Precip
+
+    face set
+    top
+
+    time value table            
+    ! 0.2 cm/hr = 5.555e-7 m/s
+    ! time     flux
+    0.0         5.555e-7        !   The initial assigned flux is applied and maintained until the next time is activated.
+    end                         !   Since only one time/value is applied the rain flux will be maintained for the entire simulation
+
+    tecplot output
+end 
+
+!--------------------------  Porous Medium BCs
+!   The subsurface/porous medium domain will be impacted by only 1 BC: 
+!       1) A 'flux nodal' BC to represent a variable pumping rate at each of the pumping wells in the model domain. 
+!           These pumping wells cycle between on/off at 6 hour intervals (10m^3/hour when turned on)
+
+
+use domain type
+porous media
+
+clear chosen nodes
+choose nodes am                 !   This command indicates an nchos file will be used to locate the desired nodes on the 2D mesh
+./mesh/Pumping_well_nodes.nchos
+2,2                             !   These node sheet indices indicate that the pumping wells will be assigned to the nodes at the top of layer 1/bottom of layer 2
+
+create node set
+wells
+
+boundary condition
+    type
+    flux nodal
+
+    node set
+    wells
+
+    time value table            !   Here we see the application of a 'time value table' which allows us to define more complex temporal properties to a BC
+    ! wells cycle on/off every 6 hours (21600 seconds)
+    ! High pumping rate is -100L/hour = -0.0000277778 m^3/sec
+    !  time     flux
+    0.0     -0.0000277778       !   The initial assigned flux is applied and maintained until the next time is activated.
+    21600   0
+    43200   -0.0000277778
+    64800   0       !   The final value entered in the list is applied until the end of the simulation. 
+    end
+    tecplot output
+end ! flux bc
+
+!!--------------------------  Evapotransiration BC and Properties
+!   Evapotranspiration (ET) is a special process that requires both material properties and a boundary condition to correctly include in HGS.
+!   ET is initially applied as a boundary condition ('Potential evapotranspiration', PET) to the surface domain, which acts as an upper limit on ET fluxes.
+!       See section 2.7.3.5 of the Reference Manual
+!   ET properties must also be defined. These properties are then used to calculate an actual evapotranspiration (AET).
+!       See section 2.8.5 of the Reference Manual. 
+!   *** Note: PET boundary condition and ET properties should always be assigned to the same regions (typically the entire ground surface of the model)!
+!   In all cases, AET is limited by the PET boundary condition. 
+!   ET affects both surface and subsurface flow domains and it is modeled as a combination of transpiration from vegetation and evaporation.
+!   As such, ET is applied to a domain of it's own with any HGS model. 
+
+!--------------------------  PET Boundary Condition
+!   First we assign a potential evapotransporation rate as a boundary condition (i.e. the upper limit on ET) 
+!   In this example we assign a homogeneous PET over the entire surface domain using a previously defined face set (top)
+!   Note: a spatially and temporarly variable PET can be assigned using the 'time-raster table' commands. You can also assign different PET values to different area 
+!   Note: the 'potential evapotranpiration' BC must be assigned to the surface domain, and the 'dual nodes for surface flow' command must be active. 
+use domain type
+surface
+
+boundary condition
+    type
+    potential evapotransporation    ! Note: there is a typo in this line, placed here intentionally to illustrate what happens when phgs.exe issues an error (see section 4.1.2 of the tutorial)
+
+    Name
+    PET1
+
+    face set
+    top
+
+    time value table    !   
+    0.0 3.e-8
+    end
+end
+
+!--------------------------  ET properties
+!   ET properties are used to calculate an actual evapotranspiration (AET) rate based on 
+!   If AET<PET at any time during the simulation then AET is applied to the applicable faces. 
+!   If AET>=PET at any time during the simulation then PET is applied to the applicable faces. 
+use domain type     !   Evapotransporation properties are assigned to their own domain!
+et
+
+properties file     !   ET properties are typically assigned to their own property file!
+R5.etprops
+
+clear chosen faces
+choose faces top
+new zone
+1
+
+clear chosen zones
+choose zone number
+1
+read properties     !   See the R5.etprops file for further information about evapotransporation properties. 
+et1
+
+echo et at point    !   This command finds the column of nodes at the given coordinates and writes pertinent ET information to the project *.eco file. 
+378.0  365.0
+
+output et details   !   This command generates detailed ET information for each PET boundary condition and writes it to a Tecplot formatted file (i.e. "R5o.ET_Detailed_MC_PET1.dat")
+
+!!--------------------------  Timestep controls and Numerical Solution Criteria
+!   The commands included in this section of the grok file control the behaviour of the numerical solution and adaptive timestepping. 
+!   Numerical solution criteria control how accurate the solution must be at each timestep before proceeding to the next. 
+!   Adaptive timestepping controls determine how timesteps automatically increase/decrease in length in order to maintain user-defined simulation accuracy based on 'control' variables. 
+!   HydroGeoSphere will adjust the timestep sizes based on changes in head, saturation and/or concentration as the solution progresses. 
+!   It is possible to use a fixed timestepping scheme in HGS (simply omit any 'control' variable commands from the grok file). 
+!   However, adaptive timestepping allows HGS to solve your numerical simulation as quickly as possible while maintaining an accurate solution. 
+
+!   Please note that when model input files are compiled a series of 'target times' are generated based on three sources: 
+!       1) Times specified by the user to meet timestep constraints
+!       2) Times specified by the user to meet output requirements
+!       3) Times at which transient boundary condition values change
+!   HydroGeoSphere will ensure that the solution is calculated at each target time.
+
+!   Numerical Solution Criteria: 
+!   The following commands control the behaviour of the iterative Newton-Rapheson solver. 
+Newton maximum iterations
+12
+Jacobian epsilon
+1.0e-6
+Newton absolute convergence criteria        ! Note: the absolute and residual convergence criteria have been set very low intentionally to demonstrate the impact on the Newton solver (see section 4.2.2 of the tutorial)
+5.0e-10
+Newton residual convergence criteria
+1.0e-10
+flow solver maximum iterations
+1000
+compute underrelaxation factor
+
+!   Timestep Control: 
+!   General timestep commands (such as min/max timestep, initial timestep, etc.) are listed in section 2.5.2 of the Reference Manual (also see section 2.4.1 of the tutorial)
+maximum timestep
+4000
+initial timestep
+0.5
+maximum timestep multiplier
+2
+minimum timestep multiplier
+0.5
+!   Adaptive timestep control commands (i.e. those commands with the word 'control' in them) determine how timesteps will vary over the course of the simulation. 
+!       These commands are described in section 2.5.2.1 of the Reference Manual (also see section 2.4.1 of the tutorial).
+!   HydroGeoSphere will adjust the timestep sizes based on changes in head, saturation and/or concentration as the solution progresses, 
+!   This ensures that the change in any control variable between timesteps does not exceed the specified values. 
+head control
+1
+Water depth control
+0.5
+saturation control
+0.5
+newton iteration control
+8
+
+!!--------------------------  Model Output
+!   There are two general types of output from an HGS model: 
+!       1) Geospatial data, i.e. calculated variables at all nodes within the model domain. 
+!       2) Timeseries data for selected nodes/elements/domains/BCs/etc.
+!   Various commands for both types of output are presented here. 
+
+! In addition, we have updated the tutorial to include particle tracing. 
+! Particle tracing commands appear following the timeseries data section. 
+
+!   *** Geospatial Data ***
+!   The command 'output times' serves two purposes in the grok file. 
+!   First, this command determines when geospatial data is written to file.
+!       Without specifying any output times you will never generate any mesh-based results!
+!   Secondly, the final output time corresponds to the overall length of the simulation
+output times
+    1       !1 second
+    60      !1 minute
+    600     !10 minutes
+    3600    !1 hour
+    7200    !2 hours
+    14400   !4 hours
+    28800   !8 hours
+    57600   !16 hours
+    86400   !24 hours
+end
+
+!   *** Timeseries Data ***
+
+! observation points/wells, hydrographs, etc. all write detailed time-series data to ascii (readable) files
+make observation point !observation point chooses the nearest node (i.e. you may not get results at the exact specified coordinate)
+point1
+360  295  398
+
+make interpolated observation point !interpolated observation point interpolates from nearest nodes (i.e. results at the exact specified coordinate)
+point2
+360  295  398
+
+make observation well !Bbservation wells flag (and write results for) each node that form the shortest path between the nodes nearest to the specified coordinates
+well1
+360  295  398
+360  295  350
+
+clear chosen nodes
+choose nodes top am
+./mesh/Downstream_boundary_nodes.nchos
+
+set hydrograph nodes    !   This flags the chosen nodes and writes total flow rate information at each timestep.
+Outlet
+
+clear chosen elements
+choose elements am
+./mesh/Clay_lens.echos
+1, 11
+
+Fluid volume for chosen elements by layer   !   Reports the total volume of water stored within a set of chosen elements over all layers in the mesh.
+Fluid volume to tecplot                     !   Automatically reformats the above command so output can be loaded in Tecplot
+
+Skip on
+
+!!--------------------------  Particle Tracing
+
+trace particle      !   This command causes HydroGeoSphere to activate particle tracing. 
+
+Trace particle logging      !   This command causes HGS to write detailed information for each particle to an ASCII file (in this case R5o.trace_particle.log)
+
+Initial particle location by layer from file    !   This command is used to initialize the location of particles in the project. 
+particle_location.txt                           !   The associated input file 'particle_location.txt' contains the initial location (X/Y coordinates), layer ID, particle group ID and release time for each particle.
+                                                !   In this example the particle_location.txt file specifies about 4000 particles (all with the same GroupID), applied to layer 1 of the model.
+                                                !   Note: a similar command 'initial particle location from file' can be used, except instead of a layer # you would provide a Z-coordinate. 
+
+Output times for particle locations     !   This command specifies the output times at which particle locations are recorded.
+    1       !1 second
+    60      !1 minute
+    600     !10 minutes
+    3600    !1 hour
+    7200    !2 hours
+    14400   !4 hours
+    28800   !8 hours
+    57600   !16 hours
+    86400   !24 hours
+end
+
+maximum trace time      !   This command specifies the maximum time at which particle traces are updated. For each particle, tracing effectively stops after this time. 
+3.156e+7                !   This command is helpful if you want to run the particle tracing for only a portion of the simulation, but is not really relevant in this example.  
+
+Maximum trace count     !   This command specifies the maximum number of locations in a particle trace path. By default it is set to 10,000. 
+50000                    !   If this number of trace locations is exceeded then particle tracing for that specific particle is effectively stopped. 
+
+!Maximum trace output   !   This command is used to limit the number of particles to record in particle trace and particle location output files.
+!1000                   !   This can be very helpful if you are using a very large number of particles that consume a lot of memory. 
+                        !   In this example we have not used the command since the number of particles is manageable. 
+
+maximum particle reflection count   !   This command specifies the maximum number of times a particle may reflect inside an element during a trace step before it is considered 'trapped'.
+50                                  !   If this number is exceeded for a given particle, then the trace step for that particle is stopped and the particle location is not updated. Tracing for that particle then resumes at the next timestep.
+
+! --------------------------------------------------------------------------------------------------------------------
+!   This is the end of the grok file! Once you have configured a grok file you need to process it through grok.exe to generate model input files. 
+!   Once model input files are generated you can run phgs.exe to perform the numerical simulation.
+!   Once the simulation is complete you can reformat your model output files using hsplot.exe or hgs2vtu.exe (i.e. for geospatial data) or go direct to the timeseries output files to interpret your results. 
+
+skip off

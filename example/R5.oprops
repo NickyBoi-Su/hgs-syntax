@@ -1,0 +1,33 @@
+!Land Classification 1
+grassland
+
+x friction
+0.3
+
+y friction
+0.3
+
+rill storage height
+0.01
+
+coupling length
+1.0e-2
+
+end material
+
+!Land Classification 2
+ranch road
+
+x friction
+0.03
+
+y friction
+0.03
+
+rill storage height
+0.002
+
+coupling length
+1.0e-2
+
+end material

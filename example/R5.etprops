@@ -1,0 +1,42 @@
+! ET materials
+!-------------------------------------------------------------
+et1
+
+evaporation depth
+3.
+
+edf quadratic decay function
+
+root depth
+3.
+
+rdf quadratic decay function
+
+lai tables
+0.0 2.08
+1.e41  2.08
+end ! lai tables
+
+transpiration fitting parameters
+0.1   ! c1
+0.05   ! c2
+2.0   ! c3
+ 
+transpiration limiting pressure head
+-150    ! wilting point
+-3.8   ! field capacity
+0    ! oxic limit
+0    ! anoxic limit
+ 
+evaporation limiting pressure head
+-1.5000000     ! minimum
+-0.5    ! maximum
+
+canopy storage parameter
+0.0
+
+initial interception storage
+0.0
+
+end ! material
+!-------------------------------------------------------------
