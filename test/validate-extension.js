@@ -76,7 +76,18 @@ function testGrammarShape() {
   assert.equal(grammar.scopeName, "source.grok");
   assert.ok(Array.isArray(grammar.patterns), "grammar patterns is an array");
   const repositoryKeys = Object.keys(grammar.repository);
-  for (const key of ["title", "skipBlock", "lineComment", "commands", "domains", "fileReferences", "numbers", "endKeyword"]) {
+  for (const key of [
+    "title",
+    "skipBlock",
+    "lineComment",
+    "useDomainTypeArgument",
+    "userDefinedNameArgument",
+    "commands",
+    "domains",
+    "fileReferences",
+    "numbers",
+    "endKeyword"
+  ]) {
     assert.ok(repositoryKeys.includes(key), `repository includes ${key}`);
   }
   const commandPattern = grammar.repository.commands.match;
@@ -91,6 +102,16 @@ function testGrammarShape() {
     grammar.patterns.findIndex((pattern) => pattern.include === "#endKeyword") <
       grammar.patterns.findIndex((pattern) => pattern.include === "#keywords"),
     "end keyword is matched before general keywords"
+  );
+  assert.ok(
+    grammar.patterns.findIndex((pattern) => pattern.include === "#useDomainTypeArgument") <
+      grammar.patterns.findIndex((pattern) => pattern.include === "#domains"),
+    "use domain type arguments are matched before generic domains"
+  );
+  assert.ok(
+    grammar.patterns.findIndex((pattern) => pattern.include === "#userDefinedNameArgument") <
+      grammar.patterns.findIndex((pattern) => pattern.include === "#commands"),
+    "user-defined name arguments are matched before generic commands"
   );
   assert.match("read algomesh 2d grid", new RegExp(commandPattern, "i"));
   assert.match("generate layers interactive", new RegExp(commandPattern, "i"));
@@ -107,6 +128,13 @@ function testGrammarShape() {
 
 function regexFor(repositoryEntry) {
   const jsCompatiblePattern = repositoryEntry.match
+    .replaceAll("(?i)", "")
+    .replaceAll("(?i:", "(?:");
+  return new RegExp(jsCompatiblePattern, "i");
+}
+
+function regexFromTextMate(pattern) {
+  const jsCompatiblePattern = pattern
     .replaceAll("(?i)", "")
     .replaceAll("(?i:", "(?:");
   return new RegExp(jsCompatiblePattern, "i");
@@ -130,6 +158,40 @@ function testRepresentativePatterns() {
   assert.match("./mesh/R5_mesh.ah2", regexFor(repo.fileReferences));
   assert.match("1.800105973E-01 4.4549345538E-04", regexFor(repo.numbers));
   assert.match("-150", regexFor(repo.numbers));
+}
+
+function testNextLineArgumentPatterns() {
+  const grammar = readJson("syntaxes/hgs.tmLanguage.json");
+  const repo = grammar.repository;
+  const useDomainBegin = regexFromTextMate(repo.useDomainTypeArgument.begin);
+  const useDomainEnd = regexFromTextMate(repo.useDomainTypeArgument.end);
+  const userNameBegin = regexFromTextMate(repo.userDefinedNameArgument.begin);
+  const userNameEnd = regexFromTextMate(repo.userDefinedNameArgument.end);
+
+  assert.equal(repo.useDomainTypeArgument.endCaptures["1"].name, "variable.parameter.domain.grok");
+  assert.equal(repo.userDefinedNameArgument.endCaptures["1"].name, "entity.name.user-defined.grok");
+
+  assert.match("use domain type     ! activate domain", useDomainBegin);
+  for (const domain of ["porous media", "dual", "surface", "fracture", "channel", "well", "tile", "et", "ET"]) {
+    const match = domain.match(useDomainEnd);
+    assert.ok(match, `${domain} matches use domain type argument line`);
+    assert.equal(match[1].toLowerCase(), domain.toLowerCase());
+  }
+  for (const invalidDomain of ["dual continua", "surface flow", "discretely-fractured"]) {
+    const match = invalidDomain.match(useDomainEnd);
+    assert.ok(match, `${invalidDomain} ends the use domain type context`);
+    assert.equal(match[1], undefined, `${invalidDomain} is not captured as a canonical domain argument`);
+  }
+
+  assert.match("create segment set", userNameBegin);
+  assert.match("create node set", userNameBegin);
+  assert.match("Name", userNameBegin);
+  assert.match("read properties", userNameBegin);
+  for (const userInput of ["outlet", "wells", "CritDepth_outlet", "Medium Sand", "et1"]) {
+    const match = userInput.match(userNameEnd);
+    assert.ok(match, `${userInput} matches user-defined name line`);
+    assert.equal(match[1], userInput);
+  }
 }
 
 function tokenSettingsByScope(theme) {
@@ -170,6 +232,7 @@ function assertHgsThemeTokens(theme, expected) {
     colorsByScope.get("keyword.control.grok").foreground,
     `${theme.name} file references differ from general keywords`
   );
+  assert.ok(colorsByScope.has("entity.name.user-defined.grok"), `${theme.name} has user-defined name color`);
 }
 
 function testThemeColors() {
@@ -184,7 +247,8 @@ function testThemeColors() {
     "comment.line.exclamation.grok": "#406A80",
     "constant.numeric.grok": "#FF3A83",
     "variable.parameter.domain.grok": "#5F7DF5",
-    "storage.type.file-reference.grok": "#F6F080"
+    "storage.type.file-reference.grok": "#F6F080",
+    "entity.name.user-defined.grok": "#00D7C3"
   });
 
   const blackTheme = readJson("themes/hgs-black-color-theme.json");
@@ -199,7 +263,8 @@ function testThemeColors() {
     "comment.line.exclamation.grok": "#8B949E",
     "constant.numeric.grok": "#79C0FF",
     "variable.parameter.domain.grok": "#7EE787",
-    "storage.type.file-reference.grok": "#F2CC60"
+    "storage.type.file-reference.grok": "#F2CC60",
+    "entity.name.user-defined.grok": "#56D4DD"
   });
 
   const whiteTheme = readJson("themes/hgs-white-color-theme.json");
@@ -214,7 +279,8 @@ function testThemeColors() {
     "comment.line.exclamation.grok": "#6E7781",
     "constant.numeric.grok": "#0550AE",
     "variable.parameter.domain.grok": "#116329",
-    "storage.type.file-reference.grok": "#9A6700"
+    "storage.type.file-reference.grok": "#9A6700",
+    "entity.name.user-defined.grok": "#0969DA"
   });
 }
 
@@ -223,6 +289,7 @@ function run() {
   testCommandData();
   testGrammarShape();
   testRepresentativePatterns();
+  testNextLineArgumentPatterns();
   testThemeColors();
   console.log("validate-extension: all tests passed");
 }

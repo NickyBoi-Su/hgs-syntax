@@ -70,6 +70,13 @@
       }
     },
     {
+      "name": "HGS User-Defined Names",
+      "scope": "entity.name.user-defined.grok",
+      "settings": {
+        "foreground": "#56D4DD"
+      }
+    },
+    {
       "name": "Generic Comments",
       "scope": "comment",
       "settings": {

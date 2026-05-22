@@ -2,23 +2,30 @@ function escapeRegex(value) {
   return value.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&");
 }
 
-function phrasePattern(phrases, options = {}) {
+function phraseAlternation(phrases) {
   const sorted = [...new Set(phrases)]
     .filter(Boolean)
     .sort((a, b) => b.length - a.length || a.localeCompare(b));
-  const pattern = `\\b(?:${sorted.map(escapeRegex).join("|")})\\b`;
+  return sorted.map(escapeRegex).join("|");
+}
+
+function phrasePattern(phrases, options = {}) {
+  const pattern = `\\b(?:${phraseAlternation(phrases)})\\b`;
   return options.caseInsensitive ? `(?i:${pattern})` : pattern;
 }
 
 function buildGrammar(commandData, options = {}) {
   const includeTitle = options.includeTitle ?? true;
   const endKeywords = ["end"];
+  const domainTypeArguments = ["porous media", "dual", "surface", "fracture", "channel", "well", "tile", "et"];
   const generalKeywords = commandData.keywords.filter(
     (keyword) => !endKeywords.includes(keyword.toLowerCase())
   );
   const patterns = [
     ...(includeTitle ? [{ include: "#title" }] : []),
     { include: "#skipBlock" },
+    { include: "#useDomainTypeArgument" },
+    { include: "#userDefinedNameArgument" },
     { include: "#lineComment" },
     { include: "#fileReferences" },
     { include: "#numbers" },
@@ -49,6 +56,32 @@ function buildGrammar(commandData, options = {}) {
         "0": { name: "punctuation.definition.comment.grok" }
       },
       end: "$"
+    },
+    useDomainTypeArgument: {
+      name: "meta.command.use-domain-type.grok",
+      begin: "^(\\s*)((?i:use\\s+domain\\s+type))\\b([^!]*)(!.*)?$",
+      beginCaptures: {
+        "2": { name: "support.function.command.grok" },
+        "4": { name: "comment.line.exclamation.grok" }
+      },
+      end: `^\\s*((?i:\\b(?:${phraseAlternation(domainTypeArguments)})\\b))\\s*(!.*)?$|^.*$`,
+      endCaptures: {
+        "1": { name: "variable.parameter.domain.grok" },
+        "2": { name: "comment.line.exclamation.grok" }
+      }
+    },
+    userDefinedNameArgument: {
+      name: "meta.command.user-defined-name.grok",
+      begin: "^(\\s*)((?i:(?:create\\b[^!\\r\\n]*\\bset\\b|name|read\\s+properties)))\\b([^!]*)(!.*)?$",
+      beginCaptures: {
+        "2": { name: "support.function.command.grok" },
+        "4": { name: "comment.line.exclamation.grok" }
+      },
+      end: "^\\s*([^!\\r\\n]*?\\S)\\s*(!.*)?$|^.*$",
+      endCaptures: {
+        "1": { name: "entity.name.user-defined.grok" },
+        "2": { name: "comment.line.exclamation.grok" }
+      }
     },
     fileReferences: {
       name: "storage.type.file-reference.grok",
@@ -86,4 +119,4 @@ function buildGrammar(commandData, options = {}) {
   };
 }
 
-module.exports = { buildGrammar, escapeRegex, phrasePattern };
+module.exports = { buildGrammar, escapeRegex, phraseAlternation, phrasePattern };

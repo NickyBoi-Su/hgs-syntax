@@ -38,9 +38,12 @@ Default HGS token colors:
 | Numbers | `constant.numeric.grok` | `#FF3A83` | `#79C0FF` | `#0550AE` |
 | Domains | `variable.parameter.domain.grok` | `#5F7DF5`, bold | `#7EE787`, bold | `#116329`, bold |
 | File references | `storage.type.file-reference.grok` | `#F6F080` | `#F2CC60` | `#9A6700` |
+| User-defined names | `entity.name.user-defined.grok` | `#00D7C3` | `#56D4DD` | `#0969DA` |
 
 Color means the grammar recognized the token. It does not prove a command is valid in its current HGS block or context.
 The `end` keyword is highlighted separately to make block endings easier to scan.
+The line immediately after `use domain type` is highlighted as a domain when it is one of `porous media`, `dual`, `surface`, `fracture`, `channel`, `well`, `tile`, or `et`.
+The line immediately after `create ... set`, `name`, or `read properties` is highlighted as a user-defined name.
 Commands inside `skip on` / `skip off` are intentionally colored as comments.
 
 Customize colors in your VS Code `settings.json`:
@@ -80,6 +83,13 @@ Customize colors in your VS Code `settings.json`:
           "scope": "storage.type.file-reference.grok",
           "settings": {
             "foreground": "#FFD700"
+          }
+        },
+        {
+          "scope": "entity.name.user-defined.grok",
+          "settings": {
+            "foreground": "#00D7C3",
+            "fontStyle": "italic"
           }
         }
       ]

@@ -13,6 +13,12 @@
       "include": "#skipBlock"
     },
     {
+      "include": "#useDomainTypeArgument"
+    },
+    {
+      "include": "#userDefinedNameArgument"
+    },
+    {
       "include": "#lineComment"
     },
     {
@@ -49,6 +55,48 @@
         }
       },
       "end": "$"
+    },
+    "useDomainTypeArgument": {
+      "name": "meta.command.use-domain-type.grok",
+      "begin": "^(\\s*)((?i:use\\s+domain\\s+type))\\b([^!]*)(!.*)?$",
+      "beginCaptures": {
+        "2": {
+          "name": "support.function.command.grok"
+        },
+        "4": {
+          "name": "comment.line.exclamation.grok"
+        }
+      },
+      "end": "^\\s*((?i:\\b(?:porous media|fracture|channel|surface|dual|tile|well|et)\\b))\\s*(!.*)?$|^.*$",
+      "endCaptures": {
+        "1": {
+          "name": "variable.parameter.domain.grok"
+        },
+        "2": {
+          "name": "comment.line.exclamation.grok"
+        }
+      }
+    },
+    "userDefinedNameArgument": {
+      "name": "meta.command.user-defined-name.grok",
+      "begin": "^(\\s*)((?i:(?:create\\b[^!\\r\\n]*\\bset\\b|name|read\\s+properties)))\\b([^!]*)(!.*)?$",
+      "beginCaptures": {
+        "2": {
+          "name": "support.function.command.grok"
+        },
+        "4": {
+          "name": "comment.line.exclamation.grok"
+        }
+      },
+      "end": "^\\s*([^!\\r\\n]*?\\S)\\s*(!.*)?$|^.*$",
+      "endCaptures": {
+        "1": {
+          "name": "entity.name.user-defined.grok"
+        },
+        "2": {
+          "name": "comment.line.exclamation.grok"
+        }
+      }
     },
     "fileReferences": {
       "name": "storage.type.file-reference.grok",
