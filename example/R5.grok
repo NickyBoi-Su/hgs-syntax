@@ -419,7 +419,7 @@ end
 !   If AET<PET at any time during the simulation then AET is applied to the applicable faces. 
 !   If AET>=PET at any time during the simulation then PET is applied to the applicable faces. 
 use domain type     !   Evapotransporation properties are assigned to their own domain!
-et
+ET
 
 properties file     !   ET properties are typically assigned to their own property file!
 R5.etprops

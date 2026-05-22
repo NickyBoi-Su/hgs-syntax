@@ -2,15 +2,20 @@ function escapeRegex(value) {
   return value.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&");
 }
 
-function phrasePattern(phrases) {
+function phrasePattern(phrases, options = {}) {
   const sorted = [...new Set(phrases)]
     .filter(Boolean)
     .sort((a, b) => b.length - a.length || a.localeCompare(b));
-  return `\\b(?:${sorted.map(escapeRegex).join("|")})\\b`;
+  const pattern = `\\b(?:${sorted.map(escapeRegex).join("|")})\\b`;
+  return options.caseInsensitive ? `(?i:${pattern})` : pattern;
 }
 
 function buildGrammar(commandData, options = {}) {
   const includeTitle = options.includeTitle ?? true;
+  const endKeywords = ["end"];
+  const generalKeywords = commandData.keywords.filter(
+    (keyword) => !endKeywords.includes(keyword.toLowerCase())
+  );
   const patterns = [
     ...(includeTitle ? [{ include: "#title" }] : []),
     { include: "#skipBlock" },
@@ -19,6 +24,7 @@ function buildGrammar(commandData, options = {}) {
     { include: "#numbers" },
     { include: "#domains" },
     { include: "#commands" },
+    { include: "#endKeyword" },
     { include: "#keywords" }
   ];
   const repository = {
@@ -54,15 +60,19 @@ function buildGrammar(commandData, options = {}) {
     },
     domains: {
       name: "variable.parameter.domain.grok",
-      match: phrasePattern(commandData.domains)
+      match: phrasePattern(commandData.domains, { caseInsensitive: true })
     },
     commands: {
       name: "support.function.command.grok",
-      match: phrasePattern(commandData.commands)
+      match: phrasePattern(commandData.commands, { caseInsensitive: true })
+    },
+    endKeyword: {
+      name: "keyword.control.end.grok",
+      match: phrasePattern(endKeywords, { caseInsensitive: true })
     },
     keywords: {
       name: "keyword.control.grok",
-      match: phrasePattern(commandData.keywords)
+      match: phrasePattern(generalKeywords, { caseInsensitive: true })
     }
   };
 

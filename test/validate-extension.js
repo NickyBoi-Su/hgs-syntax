@@ -10,11 +10,20 @@ function assertFile(relativePath) {
   assert.ok(fs.existsSync(path.join(root, relativePath)), `${relativePath} exists`);
 }
 
+function assertThemeContribution(pkg, label, uiTheme, themePath) {
+  const theme = pkg.contributes.themes.find((entry) => entry.label === label);
+  assert.ok(theme, `${label} theme is contributed`);
+  assert.equal(theme.uiTheme, uiTheme);
+  assert.equal(theme.path, themePath);
+  assertFile(themePath.replace("./", ""));
+}
+
 function testPackageContributions() {
   const pkg = readJson("package.json");
   assert.equal(pkg.name, "hgs-syntax");
   assert.equal(pkg.publisher, "hydroclaus");
   assert.equal(pkg.engines.vscode, "^1.90.0");
+  assert.ok(!Object.hasOwn(pkg, "activationEvents"), "activationEvents is omitted for declarative-only extension");
   assertFile("language-configuration.json");
   assertFile("syntaxes/hgs.tmLanguage.json");
   assertFile("syntaxes/hgs-properties.tmLanguage.json");
@@ -38,6 +47,10 @@ function testPackageContributions() {
   assert.ok(propertiesGrammar, "hgs-properties grammar is contributed");
   assert.equal(propertiesGrammar.scopeName, "source.hgs-properties");
   assert.equal(propertiesGrammar.path, "./syntaxes/hgs-properties.tmLanguage.json");
+
+  assertThemeContribution(pkg, "HGS PlasticCodeWrap", "vs-dark", "./themes/hgs-plastic-code-wrap-color-theme.json");
+  assertThemeContribution(pkg, "HGS-black", "vs-dark", "./themes/hgs-black-color-theme.json");
+  assertThemeContribution(pkg, "HGS-white", "vs", "./themes/hgs-white-color-theme.json");
 }
 
 function testCommandData() {
@@ -63,10 +76,22 @@ function testGrammarShape() {
   assert.equal(grammar.scopeName, "source.grok");
   assert.ok(Array.isArray(grammar.patterns), "grammar patterns is an array");
   const repositoryKeys = Object.keys(grammar.repository);
-  for (const key of ["title", "skipBlock", "lineComment", "commands", "domains", "fileReferences", "numbers"]) {
+  for (const key of ["title", "skipBlock", "lineComment", "commands", "domains", "fileReferences", "numbers", "endKeyword"]) {
     assert.ok(repositoryKeys.includes(key), `repository includes ${key}`);
   }
   const commandPattern = grammar.repository.commands.match;
+  const domainPattern = grammar.repository.domains.match;
+  const keywordPattern = grammar.repository.keywords.match;
+  assert.ok(commandPattern.startsWith("(?i:"), "commands are case-insensitive in TextMate grammar");
+  assert.ok(domainPattern.startsWith("(?i:"), "domains are case-insensitive in TextMate grammar");
+  assert.ok(keywordPattern.startsWith("(?i:"), "keywords are case-insensitive in TextMate grammar");
+  assert.equal(grammar.repository.endKeyword.name, "keyword.control.end.grok");
+  assert.ok(grammar.repository.endKeyword.match.startsWith("(?i:"), "end keyword is case-insensitive");
+  assert.ok(
+    grammar.patterns.findIndex((pattern) => pattern.include === "#endKeyword") <
+      grammar.patterns.findIndex((pattern) => pattern.include === "#keywords"),
+    "end keyword is matched before general keywords"
+  );
   assert.match("read algomesh 2d grid", new RegExp(commandPattern, "i"));
   assert.match("generate layers interactive", new RegExp(commandPattern, "i"));
   assert.match("evaporation depth", new RegExp(commandPattern, "i"));
@@ -91,6 +116,14 @@ function testRepresentativePatterns() {
   const grammar = readJson("syntaxes/hgs.tmLanguage.json");
   const repo = grammar.repository;
   assert.match("read algomesh 2d grid   ! reads a grid", regexFor(repo.commands));
+  assert.match("Trace particle logging", regexFor(repo.commands));
+  assert.match("Maximum trace count", regexFor(repo.commands));
+  assert.match("Fluid volume to tecplot", regexFor(repo.commands));
+  assert.match("Porous Media", regexFor(repo.domains));
+  assert.match("end", regexFor(repo.endKeyword));
+  assert.match("End", regexFor(repo.endKeyword));
+  assert.match("END", regexFor(repo.endKeyword));
+  assert.doesNotMatch("END", regexFor(repo.keywords));
   assert.match("    elevation from raster", regexFor(repo.commands));
   assert.match("evaporation depth", regexFor(repo.commands));
   assert.match("porous media", regexFor(repo.domains));
@@ -99,11 +132,98 @@ function testRepresentativePatterns() {
   assert.match("-150", regexFor(repo.numbers));
 }
 
+function tokenSettingsByScope(theme) {
+  const colorsByScope = new Map();
+  for (const rule of theme.tokenColors) {
+    const scopes = Array.isArray(rule.scope) ? rule.scope : [rule.scope];
+    for (const scope of scopes) {
+      colorsByScope.set(scope, rule.settings);
+    }
+  }
+  return colorsByScope;
+}
+
+function assertHgsThemeTokens(theme, expected) {
+  const colorsByScope = tokenSettingsByScope(theme);
+
+  for (const [scope, color] of Object.entries(expected)) {
+    assert.equal(colorsByScope.get(scope).foreground, color, `${theme.name} ${scope} color`);
+  }
+  assert.equal(colorsByScope.get("variable.parameter.domain.grok").fontStyle, "bold");
+  assert.notEqual(
+    colorsByScope.get("keyword.control.end.grok").foreground,
+    colorsByScope.get("keyword.control.grok").foreground,
+    `${theme.name} end color differs from general keywords`
+  );
+  assert.notEqual(
+    colorsByScope.get("keyword.control.end.grok").foreground,
+    colorsByScope.get("support.function.command.grok").foreground,
+    `${theme.name} end color differs from commands`
+  );
+  assert.notEqual(
+    colorsByScope.get("storage.type.file-reference.grok").foreground,
+    colorsByScope.get("support.function.command.grok").foreground,
+    `${theme.name} file references differ from commands`
+  );
+  assert.notEqual(
+    colorsByScope.get("storage.type.file-reference.grok").foreground,
+    colorsByScope.get("keyword.control.grok").foreground,
+    `${theme.name} file references differ from general keywords`
+  );
+}
+
+function testThemeColors() {
+  const plasticTheme = readJson("themes/hgs-plastic-code-wrap-color-theme.json");
+  assert.equal(plasticTheme.name, "HGS PlasticCodeWrap");
+  assert.equal(plasticTheme.type, "dark");
+  assert.equal(plasticTheme.colors["editor.background"], "#00161B");
+  assertHgsThemeTokens(plasticTheme, {
+    "support.function.command.grok": "#FFC266",
+    "keyword.control.end.grok": "#FF5E00",
+    "keyword.control.grok": "#FFA826",
+    "comment.line.exclamation.grok": "#406A80",
+    "constant.numeric.grok": "#FF3A83",
+    "variable.parameter.domain.grok": "#5F7DF5",
+    "storage.type.file-reference.grok": "#F6F080"
+  });
+
+  const blackTheme = readJson("themes/hgs-black-color-theme.json");
+  assert.equal(blackTheme.name, "HGS-black");
+  assert.equal(blackTheme.type, "dark");
+  assert.equal(blackTheme.colors["editor.background"], "#121314");
+  assert.equal(blackTheme.colors["editor.foreground"], "#BBBEBF");
+  assertHgsThemeTokens(blackTheme, {
+    "support.function.command.grok": "#D2A8FF",
+    "keyword.control.end.grok": "#FF7B72",
+    "keyword.control.grok": "#FFA657",
+    "comment.line.exclamation.grok": "#8B949E",
+    "constant.numeric.grok": "#79C0FF",
+    "variable.parameter.domain.grok": "#7EE787",
+    "storage.type.file-reference.grok": "#F2CC60"
+  });
+
+  const whiteTheme = readJson("themes/hgs-white-color-theme.json");
+  assert.equal(whiteTheme.name, "HGS-white");
+  assert.equal(whiteTheme.type, "light");
+  assert.equal(whiteTheme.colors["editor.background"], "#FFFFFF");
+  assert.equal(whiteTheme.colors["editor.foreground"], "#202020");
+  assertHgsThemeTokens(whiteTheme, {
+    "support.function.command.grok": "#8250DF",
+    "keyword.control.end.grok": "#CF222E",
+    "keyword.control.grok": "#953800",
+    "comment.line.exclamation.grok": "#6E7781",
+    "constant.numeric.grok": "#0550AE",
+    "variable.parameter.domain.grok": "#116329",
+    "storage.type.file-reference.grok": "#9A6700"
+  });
+}
+
 function run() {
   testPackageContributions();
   testCommandData();
   testGrammarShape();
   testRepresentativePatterns();
+  testThemeColors();
   console.log("validate-extension: all tests passed");
 }
 

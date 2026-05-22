@@ -1,0 +1,116 @@
+{
+  "name": "HGS-black",
+  "type": "dark",
+  "colors": {
+    "editor.background": "#121314",
+    "editor.foreground": "#BBBEBF",
+    "editorCursor.foreground": "#79C0FF",
+    "editor.lineHighlightBackground": "#1A1D1F",
+    "editor.selectionBackground": "#264F78",
+    "editor.inactiveSelectionBackground": "#264F7844",
+    "editorIndentGuide.background1": "#30363D",
+    "editorIndentGuide.activeBackground1": "#6E7681",
+    "editorLineNumber.foreground": "#6E7681",
+    "editorLineNumber.activeForeground": "#C9D1D9"
+  },
+  "tokenColors": [
+    {
+      "name": "HGS Comments",
+      "scope": [
+        "comment.line.exclamation.grok",
+        "comment.block.title.grok",
+        "comment.block.skip.grok"
+      ],
+      "settings": {
+        "foreground": "#8B949E"
+      }
+    },
+    {
+      "name": "HGS Commands",
+      "scope": "support.function.command.grok",
+      "settings": {
+        "foreground": "#D2A8FF"
+      }
+    },
+    {
+      "name": "HGS End Keyword",
+      "scope": "keyword.control.end.grok",
+      "settings": {
+        "foreground": "#FF7B72",
+        "fontStyle": "bold"
+      }
+    },
+    {
+      "name": "HGS Keywords",
+      "scope": "keyword.control.grok",
+      "settings": {
+        "foreground": "#FFA657"
+      }
+    },
+    {
+      "name": "HGS Domains",
+      "scope": "variable.parameter.domain.grok",
+      "settings": {
+        "foreground": "#7EE787",
+        "fontStyle": "bold"
+      }
+    },
+    {
+      "name": "HGS Numbers",
+      "scope": "constant.numeric.grok",
+      "settings": {
+        "foreground": "#79C0FF"
+      }
+    },
+    {
+      "name": "HGS File References",
+      "scope": "storage.type.file-reference.grok",
+      "settings": {
+        "foreground": "#F2CC60"
+      }
+    },
+    {
+      "name": "Generic Comments",
+      "scope": "comment",
+      "settings": {
+        "foreground": "#8B949E"
+      }
+    },
+    {
+      "name": "Generic Constants",
+      "scope": "constant",
+      "settings": {
+        "foreground": "#79C0FF"
+      }
+    },
+    {
+      "name": "Generic Keywords",
+      "scope": "keyword",
+      "settings": {
+        "foreground": "#FFA657"
+      }
+    },
+    {
+      "name": "Generic Storage",
+      "scope": "storage",
+      "settings": {
+        "foreground": "#F2CC60"
+      }
+    },
+    {
+      "name": "Generic Support Functions",
+      "scope": "support.function",
+      "settings": {
+        "foreground": "#D2A8FF"
+      }
+    },
+    {
+      "name": "Generic Variables",
+      "scope": "variable",
+      "settings": {
+        "foreground": "#7EE787",
+        "fontStyle": "bold"
+      }
+    }
+  ]
+}

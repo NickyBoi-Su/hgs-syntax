@@ -11,7 +11,6 @@
   "categories": [
     "Programming Languages"
   ],
-  "activationEvents": [],
   "contributes": {
     "languages": [
       {
@@ -50,6 +49,23 @@
         "language": "hgs-properties",
         "scopeName": "source.hgs-properties",
         "path": "./syntaxes/hgs-properties.tmLanguage.json"
+      }
+    ],
+    "themes": [
+      {
+        "label": "HGS PlasticCodeWrap",
+        "uiTheme": "vs-dark",
+        "path": "./themes/hgs-plastic-code-wrap-color-theme.json"
+      },
+      {
+        "label": "HGS-black",
+        "uiTheme": "vs-dark",
+        "path": "./themes/hgs-black-color-theme.json"
+      },
+      {
+        "label": "HGS-white",
+        "uiTheme": "vs",
+        "path": "./themes/hgs-white-color-theme.json"
       }
     ]
   },
