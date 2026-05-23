@@ -5,6 +5,28 @@
   "version": "0.0.1",
   "publisher": "hydroclaus",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NickyBoi-Su/hgs-syntax.git"
+  },
+  "bugs": {
+    "url": "https://github.com/NickyBoi-Su/hgs-syntax/issues"
+  },
+  "homepage": "https://github.com/NickyBoi-Su/hgs-syntax#readme",
+  "icon": "images/icon.png",
+  "galleryBanner": {
+    "color": "#121314",
+    "theme": "dark"
+  },
+  "keywords": [
+    "HydroGeoSphere",
+    "HGS",
+    "GROK",
+    "syntax",
+    "highlighting",
+    "hydrology",
+    "groundwater"
+  ],
   "engines": {
     "vscode": "^1.90.0"
   },
@@ -20,7 +42,9 @@
           "HGS",
           "GROK"
         ],
-        "extensions": [".grok"],
+        "extensions": [
+          ".grok"
+        ],
         "configuration": "./language-configuration.json"
       },
       {

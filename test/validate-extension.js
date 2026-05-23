@@ -22,11 +22,33 @@ function testPackageContributions() {
   const pkg = readJson("package.json");
   assert.equal(pkg.name, "hgs-syntax");
   assert.equal(pkg.publisher, "hydroclaus");
+  assert.equal(pkg.displayName, "HydroGeoSphere Syntax");
+  assert.equal(pkg.description, "Syntax highlighting for HydroGeoSphere GROK and property files.");
+  assert.equal(pkg.license, "MIT");
+  assert.deepEqual(pkg.repository, {
+    type: "git",
+    url: "https://github.com/NickyBoi-Su/hgs-syntax.git"
+  });
+  assert.deepEqual(pkg.bugs, {
+    url: "https://github.com/NickyBoi-Su/hgs-syntax/issues"
+  });
+  assert.equal(pkg.homepage, "https://github.com/NickyBoi-Su/hgs-syntax#readme");
+  assert.equal(pkg.icon, "images/icon.png");
+  assert.deepEqual(pkg.galleryBanner, {
+    color: "#121314",
+    theme: "dark"
+  });
+  for (const keyword of ["HydroGeoSphere", "HGS", "GROK", "syntax", "highlighting"]) {
+    assert.ok(pkg.keywords.includes(keyword), `package keywords include ${keyword}`);
+  }
   assert.equal(pkg.engines.vscode, "^1.90.0");
   assert.ok(!Object.hasOwn(pkg, "activationEvents"), "activationEvents is omitted for declarative-only extension");
   assertFile("language-configuration.json");
   assertFile("syntaxes/hgs.tmLanguage.json");
   assertFile("syntaxes/hgs-properties.tmLanguage.json");
+  assertFile("images/icon.png");
+  assertFile("CHANGELOG.md");
+  assertFile(".vscodeignore");
 
   const language = pkg.contributes.languages.find((entry) => entry.id === "hgs");
   assert.ok(language, "hgs language is contributed");
