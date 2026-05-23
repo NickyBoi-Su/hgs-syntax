@@ -1,4 +1,5 @@
 .external/
+docs/superpowers/
 hydrosphere_ref.pdf
 node_modules/
 package-lock.json
