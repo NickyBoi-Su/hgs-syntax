@@ -2,7 +2,7 @@
   "name": "hgs-syntax",
   "displayName": "HydroGeoSphere Syntax",
   "description": "Syntax highlighting for HydroGeoSphere GROK and property files.",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "hydroclaus",
   "license": "MIT",
   "repository": {
