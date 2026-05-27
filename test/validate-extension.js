@@ -178,6 +178,12 @@ function testRepresentativePatterns() {
   assert.match("evaporation depth", regexFor(repo.commands));
   assert.match("porous media", regexFor(repo.domains));
   assert.match("./mesh/R5_mesh.ah2", regexFor(repo.fileReferences));
+  assert.match("./Elevations/base.asc", regexFor(repo.fileReferences));
+  assert.match("./tables/inflow.txt", regexFor(repo.fileReferences));
+  assert.match("./rasters/dem.tif", regexFor(repo.fileReferences));
+  assert.match("./rasters/dem.tiff", regexFor(repo.fileReferences));
+  assert.match("./rasters/dem.geotiff", regexFor(repo.fileReferences));
+  assert.match("./gis/watershed.shp", regexFor(repo.fileReferences));
   assert.match("1.800105973E-01 4.4549345538E-04", regexFor(repo.numbers));
   assert.match("-150", regexFor(repo.numbers));
 }

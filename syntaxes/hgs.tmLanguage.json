@@ -104,7 +104,7 @@
     },
     "fileReferences": {
       "name": "storage.type.file-reference.grok",
-      "match": "(?i)(?:^|[\\s./\\\\])[-A-Za-z0-9_./\\\\]+\\.(?:grok|mprops|etprops|fprops|dprops|oprops|txt|dat|asc|ah2|nchos|echos)\\b"
+      "match": "(?i)(?:^|[\\s./\\\\])[-A-Za-z0-9_./\\\\]+\\.(?:grok|mprops|etprops|fprops|dprops|oprops|txt|dat|asc|ascii|tif|tiff|geotiff|shp|ah2|nchos|echos)\\b"
     },
     "numbers": {
       "name": "constant.numeric.grok",
